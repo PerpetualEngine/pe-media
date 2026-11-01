@@ -17,6 +17,12 @@ Status values: `new` → `researched` → `contacted` → `in talks` → `active
 |---|---|---|---|---|
 | 2026-11-01 | https://www.instagram.com/reel/DcuZummMECn/ | (to confirm) | Saved alongside @thira.yoga_carolin. Capture hook, format, length, caption/CTA, and rough engagement. | new |
 
+## Reference posts (Threads, X, other)
+
+| Added | Post | Creator | What to note | Status |
+|---|---|---|---|---|
+| 2026-11-01 | https://www.threads.com/share/BAY6ot2VyL/ | (to confirm) | Saved from Threads. Capture the post text, angle, and whether it points to an offer or funnel. | new |
+
 ## Intake checklist (per creator)
 
 - Follower count and recent average reel views
