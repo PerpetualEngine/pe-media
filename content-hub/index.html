@@ -1,0 +1,413 @@
+<title>Content Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky header + account tabs, then a contact-sheet grid of posts; editor slides up as a sheet on phone, centred panel on desktop. */
+:root {
+  --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ececf1; --line: #dcdce4;
+  --fg: #16161d; --muted: #646474; --accent: #2346d8; --accent-fg: #ffffff; --accent-soft: #e3e8fd;
+  --idea: #7a7a8c; --idea-soft: #ececf1; --ready: #a35f00; --ready-soft: #fdf0d8; --posted: #1c7a43; --posted-soft: #dcf3e5;
+  --danger: #c0262d; --shadow: 0 10px 40px rgba(20,20,40,.18);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111116; --surface: #1b1b22; --surface-2: #26262f; --line: #33333e;
+  --fg: #ededf3; --muted: #9a9aab; --accent: #8199ff; --accent-fg: #0d1030; --accent-soft: #232a4d;
+  --idea: #a6a6b8; --idea-soft: #2a2a33; --ready: #f2b552; --ready-soft: #3a2c12; --posted: #5fd38f; --posted-soft: #143222;
+  --danger: #ff6b70; --shadow: 0 10px 40px rgba(0,0,0,.5); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #111116; --surface: #1b1b22; --surface-2: #26262f; --line: #33333e;
+  --fg: #ededf3; --muted: #9a9aab; --accent: #8199ff; --accent-fg: #0d1030; --accent-soft: #232a4d;
+  --idea: #a6a6b8; --idea-soft: #2a2a33; --ready: #f2b552; --ready-soft: #3a2c12; --posted: #5fd38f; --posted-soft: #143222;
+  --danger: #ff6b70; --shadow: 0 10px 40px rgba(0,0,0,.5); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar { display: flex; align-items: center; gap: 12px; padding-block: 14px 10px; }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: -.01em; margin: 0; flex: 1; min-width: 0; }
+.sync { font: 500 11px/1 var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: flex; align-items: center; gap: 6px; }
+.sync i { width: 7px; height: 7px; border-radius: 50%; background: var(--idea); display: inline-block; }
+.sync.on i { background: var(--posted); }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.danger { color: var(--danger); }
+.btn[disabled] { opacity: .5; cursor: default; }
+
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; font-size: 14px; }
+.tab[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.tab .dot { width: 9px; height: 9px; border-radius: 50%; }
+.tab .n { font: 500 11px var(--f-mono); opacity: .65; font-variant-numeric: tabular-nums; }
+.tab.add { border-style: dashed; color: var(--muted); }
+.tab .edit { border: 0; background: none; padding: 0 0 0 2px; color: inherit; opacity: .6; font-size: 13px; }
+
+.filters { display: flex; gap: 6px; flex-wrap: wrap; padding-block: 16px 4px; align-items: center; }
+.chip { border: 0; background: transparent; padding: 6px 10px; border-radius: 8px; font-weight: 500; color: var(--muted); font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); }
+.chip .n { font: 500 11px var(--f-mono); margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+main { padding-block: 8px 96px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+@media (max-width: 520px) { .grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
+.card { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 0; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.card:hover { border-color: var(--muted); }
+.thumb { aspect-ratio: 4 / 5; background: var(--surface-2); position: relative; overflow: hidden; display: grid; place-items: center; color: var(--muted); font: 500 12px var(--f-mono); }
+.thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .count { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.6); color: #fff; font: 500 11px var(--f-mono); padding: 3px 7px; border-radius: 6px; }
+.thumb .kind { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.6); color: #fff; font: 500 11px var(--f-mono); padding: 3px 7px; border-radius: 6px; text-transform: uppercase; letter-spacing: .05em; }
+.card .meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card .ttl { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .cap { color: var(--muted); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; }
+.card .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.acct { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.acct i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.pill { font: 500 11px var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px; border-radius: 999px; flex: none; }
+.pill.idea { color: var(--idea); background: var(--idea-soft); }
+.pill.ready { color: var(--ready); background: var(--ready-soft); }
+.pill.posted { color: var(--posted); background: var(--posted-soft); }
+
+.empty { border: 1px dashed var(--line); border-radius: 16px; padding: 32px 20px; text-align: center; color: var(--muted); display: grid; gap: 14px; justify-items: center; }
+.empty h2 { font-family: var(--f-display); color: var(--fg); margin: 0; font-size: 22px; text-wrap: balance; }
+.empty ol { text-align: left; margin: 0; padding-left: 20px; max-width: 420px; display: grid; gap: 4px; }
+.note { color: var(--muted); font-size: 13px; }
+
+.fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 6; box-shadow: var(--shadow); padding: 13px 18px; border-radius: 14px; }
+
+/* Sheets */
+.scrim { position: fixed; inset: 0; background: rgba(10,10,20,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--surface); width: 100%; max-width: 640px; max-height: 92%; overflow-y: auto; border-radius: 18px 18px 0 0; box-shadow: var(--shadow); padding: 18px max(18px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); display: grid; gap: 16px; }
+@media (min-width: 720px) { .scrim { align-items: center; padding: 24px; } .sheet { border-radius: 18px; } }
+.sheet h2 { font-family: var(--f-display); margin: 0; font-size: 20px; flex: 1; }
+.sheet .head { display: flex; align-items: center; gap: 8px; }
+.field { display: grid; gap: 6px; }
+.field > span { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; gap: 8px; }
+.field > span em { font-style: normal; font-weight: 500; text-transform: none; letter-spacing: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+input[type="text"], textarea, select { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+textarea { resize: vertical; min-height: 96px; }
+.seg { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 12px; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 8px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.media { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.mitem { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--surface-2); display: grid; place-items: center; font: 500 11px var(--f-mono); color: var(--muted); }
+.mitem img, .mitem video { width: 100%; height: 100%; object-fit: cover; }
+.mitem .x { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 15px; line-height: 1; }
+.mitem .sv { position: absolute; left: 4px; bottom: 4px; border: 0; background: rgba(0,0,0,.65); color: #fff; font: 600 11px var(--f-body); padding: 4px 8px; border-radius: 6px; }
+.upl { border: 1px dashed var(--line); background: transparent; aspect-ratio: 1; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 13px; display: grid; place-items: center; text-align: center; padding: 6px; }
+.quick { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px; background: var(--accent-soft); border-radius: 12px; align-items: center; }
+.quick b { flex: 1 1 100%; font-size: 13px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.actions .sp { flex: 1; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; }
+.sw[aria-pressed="true"] { border-color: var(--fg); }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 10px; color: var(--danger); font-size: 14px; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 500; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .sheet { animation: up .2s ease-out; } @keyframes up { from { transform: translateY(24px); opacity: .6; } } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <h1 class="brand">Content Hub</h1>
+      <span class="sync" id="sync"><i></i><span id="syncText">Connecting</span></span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Accounts"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="filters" id="filters" role="group" aria-label="Filter by status"></div>
+  <div id="list"></div>
+</main>
+
+<button class="btn primary fab" id="newBtn" type="button">+ New post</button>
+<div id="layer"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const STATUSES = [["idea","Idea"],["ready","Ready"],["posted","Posted"]];
+const COLORS = ["#2346d8","#e0457b","#13a37f","#f08c00","#8a4fff","#0f9bd7"];
+const S = { db: null, assets: null, sample: null, downloads: null, accounts: [], posts: [], loaded: false, offline: false, acct: "all", status: "all", editor: null };
+try { const t = localStorage.getItem("ch.acct"); if (t) S.acct = t; } catch (e) {}
+
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "style") el.style.cssText = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : String(c));
+  return el;
+}
+const blobUrl = (id) => "/_blob/" + id;
+const isVideo = (m) => (m.type || "").startsWith("video/");
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+function setSync(on, text) { $("sync").classList.toggle("on", on); $("syncText").textContent = text; }
+const acctById = (id) => S.accounts.find(a => a.id === id);
+
+function mediaEl(m, cls) {
+  if (isVideo(m)) return h("video", { src: blobUrl(m.id) + "#t=0.1", muted: true, playsinline: true, preload: "metadata", class: cls });
+  return h("img", { src: blobUrl(m.id), alt: "", loading: "lazy", class: cls });
+}
+
+/* ---------- Render ---------- */
+function render() {
+  // tabs
+  const tabs = $("tabs"); tabs.replaceChildren();
+  const countFor = (aid) => S.posts.filter(p => aid === "all" || p.accountId === aid).length;
+  tabs.append(h("button", { class: "tab", type: "button", "aria-pressed": String(S.acct === "all"), onclick: () => pickAcct("all") }, "All", h("span", { class: "n" }, countFor("all"))));
+  for (const a of S.accounts) {
+    const on = S.acct === a.id;
+    tabs.append(h("span", { class: "tab", role: "button", tabindex: "0", "aria-pressed": String(on), onclick: (e) => { if (!e.target.closest(".edit")) pickAcct(a.id); }, onkeydown: (e) => { if (e.key === "Enter") pickAcct(a.id); } },
+      h("span", { class: "dot", style: "background:" + a.color }), a.name, h("span", { class: "n" }, countFor(a.id)),
+      on ? h("button", { class: "edit", type: "button", "aria-label": "Edit " + a.name, onclick: () => openAccount(a) }, "Edit") : null));
+  }
+  tabs.append(h("button", { class: "tab add", type: "button", onclick: () => openAccount(null) }, "+ Account"));
+
+  // filters
+  const inAcct = S.posts.filter(p => S.acct === "all" || p.accountId === S.acct);
+  const f = $("filters"); f.replaceChildren();
+  f.append(h("button", { class: "chip", type: "button", "aria-pressed": String(S.status === "all"), onclick: () => { S.status = "all"; render(); } }, "Everything", h("span", { class: "n" }, inAcct.length)));
+  for (const [k, label] of STATUSES) f.append(h("button", { class: "chip", type: "button", "aria-pressed": String(S.status === k), onclick: () => { S.status = k; render(); } }, label, h("span", { class: "n" }, inAcct.filter(p => p.status === k).length)));
+
+  // list
+  const list = $("list"); list.replaceChildren();
+  $("newBtn").hidden = !S.db;
+  if (!S.loaded) {
+    list.append(h("div", { class: "empty" }, S.offline
+      ? [h("h2", {}, "Sync isn't available here"), h("p", {}, "Open this page from your Claude account (on your desktop or in the Claude app on your phone) so your posts can be saved and synced.")]
+      : [h("h2", {}, "Loading your posts…")]));
+    return;
+  }
+  if (!S.accounts.length) {
+    list.append(h("div", { class: "empty" },
+      h("h2", {}, "Set up your accounts"),
+      h("ol", {}, h("li", {}, "Add each social account you post to."), h("li", {}, "Create posts: drop in the images or videos you generated, plus the caption and prompt."), h("li", {}, "On your phone, open a Ready post, copy the caption, save the media and post it.")),
+      h("button", { class: "btn primary", type: "button", onclick: () => openAccount(null) }, "+ Add your first account")));
+    return;
+  }
+  const shown = inAcct.filter(p => S.status === "all" || p.status === S.status);
+  if (!shown.length) {
+    list.append(h("div", { class: "empty" }, h("h2", {}, S.status === "all" ? "No posts yet" : "Nothing marked " + S.status),
+      h("p", {}, "Add the images, videos and caption for your next post."),
+      h("button", { class: "btn primary", type: "button", onclick: () => openEditor(null) }, "+ New post")));
+    return;
+  }
+  const grid = h("div", { class: "grid" });
+  for (const p of shown) {
+    const a = acctById(p.accountId);
+    const m = (p.media || [])[0];
+    const thumb = h("div", { class: "thumb" }, m ? mediaEl(m) : "No media");
+    if (m && isVideo(m)) thumb.append(h("span", { class: "kind" }, "Video"));
+    if ((p.media || []).length > 1) thumb.append(h("span", { class: "count" }, "1/" + p.media.length));
+    grid.append(h("button", { class: "card", type: "button", onclick: () => openEditor(p) }, thumb,
+      h("div", { class: "meta" },
+        h("div", { class: "ttl" }, p.title || "Untitled"),
+        h("div", { class: "cap" }, p.caption || ""),
+        h("div", { class: "row" },
+          h("span", { class: "acct" }, h("i", { style: "background:" + (a ? a.color : "var(--idea)") }), a ? a.name : "No account"),
+          h("span", { class: "pill " + p.status }, p.status)))));
+  }
+  list.append(grid);
+}
+function pickAcct(id) { S.acct = id; try { localStorage.setItem("ch.acct", id); } catch (e) {} render(); }
+
+/* ---------- Account sheet ---------- */
+function closeLayer() { $("layer").replaceChildren(); S.editor = null; }
+function sheet(content) {
+  const scrim = h("div", { class: "scrim", onclick: (e) => { if (e.target === scrim) content.cancel(); } }, content.el);
+  $("layer").replaceChildren(scrim);
+  const first = content.el.querySelector("input,textarea"); if (first && matchMedia("(min-width:720px)").matches) first.focus();
+}
+function openAccount(a) {
+  const st = { name: a ? a.name : "", handle: a ? a.handle || "" : "", color: a ? a.color : COLORS[S.accounts.length % COLORS.length], confirm: false };
+  const el = h("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-label": a ? "Edit account" : "Add account" });
+  const draw = () => {
+    el.replaceChildren(
+      h("div", { class: "head" }, h("h2", {}, a ? "Edit account" : "Add account"), h("button", { class: "btn ghost", type: "button", onclick: closeLayer }, "Close")),
+      h("label", { class: "field" }, h("span", {}, "Name"), h("input", { type: "text", id: "acName", value: st.name, placeholder: "e.g. Main account", oninput: (e) => st.name = e.target.value })),
+      h("label", { class: "field" }, h("span", {}, "Handle"), h("input", { type: "text", id: "acHandle", value: st.handle, placeholder: "@handle", oninput: (e) => st.handle = e.target.value })),
+      h("div", { class: "field" }, h("span", {}, "Color"), h("div", { class: "swatches" }, COLORS.map(c => h("button", { class: "sw", type: "button", style: "background:" + c, "aria-label": "Color " + c, "aria-pressed": String(st.color === c), onclick: () => { st.color = c; draw(); } })))),
+      st.confirm ? h("div", { class: "confirm" }, "Delete this account? Its posts stay under “No account”.", h("span", { class: "sp" }),
+        h("button", { class: "btn", type: "button", onclick: () => { st.confirm = false; draw(); } }, "Keep"),
+        h("button", { class: "btn danger", type: "button", onclick: async () => { await S.db.doc("accounts/" + a.id).delete().catch(err); if (S.acct === a.id) pickAcct("all"); closeLayer(); toast("Account deleted"); } }, "Delete")) : null,
+      h("div", { class: "actions" },
+        a && !st.confirm ? h("button", { class: "btn danger", type: "button", onclick: () => { st.confirm = true; draw(); } }, "Delete") : null,
+        h("span", { class: "sp" }),
+        h("button", { class: "btn primary", type: "button", onclick: async () => {
+          if (!st.name.trim()) { toast("Give the account a name"); return; }
+          const body = { name: st.name.trim(), handle: st.handle.trim(), color: st.color, createdAt: a ? a.createdAt : Date.now() };
+          const ref = a ? S.db.doc("accounts/" + a.id) : S.db.collection("accounts").doc();
+          try { await ref.set(body); closeLayer(); if (!a) pickAcct(ref.id); toast(a ? "Account saved" : "Account added"); } catch (e) { err(e); }
+        } }, a ? "Save" : "Add account")));
+  };
+  draw();
+  sheet({ el, cancel: closeLayer });
+}
+
+/* ---------- Post editor ---------- */
+function openEditor(p) {
+  if (!S.accounts.length) { openAccount(null); return; }
+  const d = p ? structuredClone({ ...p }) : { accountId: S.acct !== "all" ? S.acct : S.accounts[0].id, title: "", caption: "", hashtags: "", prompt: "", status: "idea", media: [] };
+  d.media = d.media || [];
+  const st = { uploading: 0, fresh: [], confirm: false, ai: false, saving: false };
+  S.editor = st;
+  const el = h("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-label": p ? "Post" : "New post" });
+  const fileIn = h("input", { type: "file", accept: "image/*,video/*", multiple: true, hidden: true, id: "fileIn", onchange: (e) => { upload([...e.target.files]); e.target.value = ""; } });
+
+  async function upload(files) {
+    if (!S.assets) { toast("Uploads aren't available in this view"); return; }
+    for (const f of files) {
+      if (f.size > 20 * 1024 * 1024) { toast(f.name + " is over 20 MB. Export a smaller version."); continue; }
+      st.uploading++; draw();
+      try {
+        const r = await S.assets.upload(f);
+        const m = { id: r.id, type: r.contentType || f.type, name: f.name, size: r.sizeBytes };
+        d.media.push(m); st.fresh.push(m.id);
+      } catch (e) { toast(e && e.code === "too_large" ? f.name + " is too large" : "Couldn't upload " + f.name); }
+      st.uploading--; draw();
+    }
+  }
+  async function cancel() {
+    // remove files uploaded in this session that never got saved
+    for (const id of st.fresh) S.assets && S.assets.delete(id).catch(() => {});
+    closeLayer();
+  }
+  async function save(statusOverride) {
+    if (st.uploading) { toast("Wait for uploads to finish"); return; }
+    st.saving = true; draw();
+    const body = { accountId: d.accountId, title: d.title.trim(), caption: d.caption, hashtags: d.hashtags, prompt: d.prompt, status: statusOverride || d.status, media: d.media,
+      createdAt: p ? p.createdAt : Date.now(), updatedAt: Date.now(), postedAt: (statusOverride || d.status) === "posted" ? (p && p.postedAt) || Date.now() : null };
+    const ref = p ? S.db.doc("posts/" + p.id) : S.db.collection("posts").doc();
+    try {
+      await ref.set(body);
+      if (p) for (const m of (p.media || [])) if (!d.media.find(x => x.id === m.id)) S.assets && S.assets.delete(m.id).catch(() => {});
+      closeLayer(); toast(statusOverride === "posted" ? "Marked as posted" : "Saved");
+    } catch (e) { st.saving = false; draw(); err(e); }
+  }
+  async function remove() {
+    try { await S.db.doc("posts/" + p.id).delete(); for (const m of (p.media || [])) S.assets && S.assets.delete(m.id).catch(() => {}); closeLayer(); toast("Post deleted"); } catch (e) { err(e); }
+  }
+  async function copyCaption() {
+    const text = [d.caption.trim(), d.hashtags.trim()].filter(Boolean).join("\n\n");
+    if (!text) { toast("No caption yet"); return; }
+    try { await navigator.clipboard.writeText(text); toast("Caption copied"); }
+    catch (e) { const ta = el.querySelector("#edCaption"); if (ta) { ta.focus(); ta.select(); } toast("Copy the selected caption"); }
+  }
+  async function saveMedia(m) {
+    if (!S.downloads) { window.open(blobUrl(m.id), "_blank"); return; }
+    try {
+      const blob = await (await fetch(blobUrl(m.id))).blob();
+      await S.downloads.save({ filename: m.name || ("post-" + m.id + (isVideo(m) ? ".mp4" : ".png")), data: blob });
+      toast("Saved " + (m.name || "file"));
+    } catch (e) { if (!e || e.code !== "declined") toast("Couldn't save the file"); }
+  }
+  async function suggest() {
+    if (!S.sample) { toast("AI suggestions aren't available here"); return; }
+    st.ai = true; draw();
+    const a = acctById(d.accountId);
+    try {
+      let images;
+      const img = d.media.find(m => !isVideo(m));
+      if (img) { try { const lim = await S.sample.limits(); if (lim && lim.images) images = [await (await fetch(blobUrl(img.id))).blob()]; } catch (e) {} }
+      const out = await S.sample.json(
+        "You write social media captions. Return JSON {\"caption\": string, \"hashtags\": string}. " +
+        "caption: 1-3 short punchy lines with a strong first-line hook, no hashtags inside. hashtags: 5-10 relevant hashtags separated by spaces.\n\n" +
+        "Account: " + (a ? a.name + " " + (a.handle || "") : "unknown") + "\nPost title: " + (d.title || "(none)") +
+        "\nGeneration prompt used for the media: " + (d.prompt || "(none)") + "\nCurrent caption draft: " + (d.caption || "(none)") +
+        (images ? "\nThe first image of the post is attached." : ""), { images, modelTier: "quick", cache: false });
+      if (out && out.caption) d.caption = out.caption;
+      if (out && out.hashtags) d.hashtags = out.hashtags;
+      toast("Caption suggested. Edit it as you like.");
+    } catch (e) { toast(e && e.code === "rate_limited" ? "Too many requests. Try again in a minute." : "Couldn't suggest a caption"); }
+    st.ai = false; draw();
+  }
+
+  const draw = () => {
+    const capLen = (d.caption || "").length;
+    el.replaceChildren(
+      h("div", { class: "head" }, h("h2", {}, p ? (p.title || "Post") : "New post"), h("button", { class: "btn ghost", type: "button", onclick: cancel }, "Close")),
+      p ? h("div", { class: "quick" }, h("b", {}, "Ready to post?"),
+        h("button", { class: "btn", type: "button", onclick: copyCaption }, "Copy caption"),
+        d.media.length ? h("button", { class: "btn", type: "button", onclick: async () => { for (const m of d.media) await saveMedia(m); } }, d.media.length > 1 ? "Save all " + d.media.length + " files" : "Save media") : null,
+        d.status !== "posted" ? h("button", { class: "btn primary", type: "button", onclick: () => save("posted") }, "Mark posted") : null) : null,
+      h("label", { class: "field" }, h("span", {}, "Account"), h("select", { id: "edAcct", onchange: (e) => d.accountId = e.target.value },
+        S.accounts.map(a => h("option", { value: a.id, selected: a.id === d.accountId }, a.name + (a.handle ? "  " + a.handle : ""))))),
+      h("div", { class: "field" }, h("span", {}, "Media", h("em", {}, st.uploading ? "Uploading " + st.uploading + "…" : d.media.length + " file" + (d.media.length === 1 ? "" : "s"))),
+        h("div", { class: "media" },
+          d.media.map((m, i) => h("div", { class: "mitem" }, mediaEl(m),
+            h("button", { class: "x", type: "button", "aria-label": "Remove", onclick: () => { d.media.splice(i, 1); draw(); } }, "×"),
+            p ? h("button", { class: "sv", type: "button", onclick: () => saveMedia(m) }, "Save") : null)),
+          h("button", { class: "upl", type: "button", onclick: () => fileIn.click() }, "+ Add images or video")), fileIn),
+      h("label", { class: "field" }, h("span", {}, "Title"), h("input", { type: "text", id: "edTitle", value: d.title, placeholder: "Short name so you can find it", oninput: (e) => d.title = e.target.value })),
+      h("label", { class: "field" }, h("span", {}, "Caption", h("em", { id: "capLen" }, capLen + " / 2,200")),
+        h("textarea", { id: "edCaption", rows: "4", placeholder: "What goes under the post", oninput: (e) => { d.caption = e.target.value; el.querySelector("#capLen").textContent = d.caption.length + " / 2,200"; } }, d.caption)),
+      h("label", { class: "field" }, h("span", {}, "Hashtags"), h("input", { type: "text", id: "edTags", value: d.hashtags, placeholder: "#ai #art", oninput: (e) => d.hashtags = e.target.value })),
+      S.sample ? h("div", {}, h("button", { class: "btn", type: "button", disabled: st.ai, onclick: suggest }, st.ai ? "Writing…" : "✦ Suggest caption with AI")) : null,
+      h("label", { class: "field" }, h("span", {}, "Prompt used"), h("textarea", { id: "edPrompt", rows: "3", placeholder: "The AI prompt you used to make this, so you can repeat what works", oninput: (e) => d.prompt = e.target.value }, d.prompt)),
+      h("div", { class: "field" }, h("span", {}, "Status"), h("div", { class: "seg", role: "group" }, STATUSES.map(([k, label]) => h("button", { type: "button", "aria-pressed": String(d.status === k), onclick: () => { d.status = k; draw(); } }, label)))),
+      st.confirm ? h("div", { class: "confirm" }, "Delete this post and its files?", h("span", { class: "sp" }),
+        h("button", { class: "btn", type: "button", onclick: () => { st.confirm = false; draw(); } }, "Keep"),
+        h("button", { class: "btn danger", type: "button", onclick: remove }, "Delete")) : null,
+      h("div", { class: "actions" },
+        p && !st.confirm ? h("button", { class: "btn danger", type: "button", onclick: () => { st.confirm = true; draw(); } }, "Delete") : null,
+        h("span", { class: "sp" }),
+        h("button", { class: "btn", type: "button", onclick: cancel }, "Cancel"),
+        h("button", { class: "btn primary", type: "button", disabled: st.saving || st.uploading > 0, onclick: () => save() }, st.saving ? "Saving…" : "Save")));
+  };
+  draw();
+  sheet({ el, cancel });
+}
+
+function err(e) {
+  const c = e && e.code;
+  toast(c === "quota_exceeded" ? "Storage is full. Delete old posts to make room." : c === "invalid_argument" ? "You can't edit this hub from this account." : "Something went wrong. Try again.");
+}
+
+$("newBtn").addEventListener("click", () => openEditor(null));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("layer").firstChild) closeLayer(); });
+render();
+
+/* ---------- Capabilities ---------- */
+if (!window.claude || !window.claude.use) { S.offline = true; setSync(false, "Offline"); render(); return; }
+const timer = setTimeout(() => { if (!S.loaded) { S.offline = true; setSync(false, "Not synced"); render(); } }, 10000);
+claude.use("db").then(db => {
+  if (!db) { clearTimeout(timer); S.offline = true; setSync(false, "Not synced"); render(); return; }
+  S.db = db;
+  let got = 0;
+  const ready = () => { if (++got >= 2) { clearTimeout(timer); S.loaded = true; S.offline = false; setSync(true, "Synced"); } render(); };
+  let aOnce = false, pOnce = false;
+  db.collection("accounts").onSnapshot(snap => {
+    S.accounts = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    if (S.acct !== "all" && !S.accounts.find(a => a.id === S.acct) && snap.metadata && !snap.metadata.fromCache) S.acct = "all";
+    if (!aOnce) { aOnce = true; ready(); } else render();
+  }, () => { setSync(false, "Sync paused"); });
+  db.collection("posts").orderBy("updatedAt", "desc").onSnapshot(snap => {
+    S.posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!pOnce) { pOnce = true; ready(); } else if (!S.editor) render(); else render();
+  }, () => { setSync(false, "Sync paused"); });
+});
+claude.use("assets").then(a => { S.assets = a; });
+claude.use("sample").then(s => { S.sample = s; if (S.editor) {} });
+claude.use("downloads").then(d => { S.downloads = d; });
+})();
+</script>
